@@ -3,9 +3,14 @@ import { NextResponse } from "next/server";
 import PDFParser from "pdf2json"; 
 import * as mammoth from "mammoth";
 
+// Define the exact shape for OpenAI content to replace 'any'
+type ChatContentPart = OpenAI.Chat.Completions.ChatCompletionContentPart;
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+export const runtime = 'nodejs'; 
 
 export async function POST(req: Request) {
   try {
@@ -17,16 +22,16 @@ export async function POST(req: Request) {
     const fileStrings = formData.getAll('image') as string[]; 
 
     let extractedTextContext = "";
-    const imagesToSend: string[] = [];
+    const imagesToSend: ChatContentPart[] = [];
 
-    // 1. Process Files (Read Content)
     for (const fileStr of fileStrings) {
       if (fileStr.startsWith("data:application/pdf")) {
         const base64Data = fileStr.split(",")[1];
         const buffer = Buffer.from(base64Data, 'base64');
         
         const pdfText = await new Promise<string>((resolve, reject) => {
-          const parser = new PDFParser(null, 1);
+          // Explicitly typing the parser to avoid 'any'
+          const parser = new (PDFParser as unknown as new (ctx: null, bit: number) => PDFParser)(null, 1);
           parser.on("pdfParser_dataError", (errData: { parserError: string | Error }) => reject(errData.parserError));
           parser.on("pdfParser_dataReady", () => resolve(parser.getRawTextContent()));
           parser.parseBuffer(buffer);
@@ -45,29 +50,29 @@ export async function POST(req: Request) {
         } 
       } 
       else if (fileStr.startsWith("data:image")) {
-        imagesToSend.push(fileStr);
+        imagesToSend.push({ 
+          type: "image_url", 
+          image_url: { url: fileStr } 
+        });
       }
     }
 
-    // 2. Define Personality
     let systemInstruction = "";
     switch (mode) {
-      case 'spy': systemInstruction = `You are an elite Job Scout (${language}). Analyze the user's request and any attached job description files. Extract salary, requirements, and next steps.`; break;
-      case 'resume': systemInstruction = `You are an expert Resume Builder (${language}). I have attached my current resume text/files. Rewrite it to be ATS-friendly, results-oriented, and punchy.`; break;
-      case 'review': systemInstruction = `You are a strict Hiring Manager (${language}). I attached my CV. Roast it constructively. Point out formatting errors, weak verbs, or missing metrics.`; break;
-      case 'cover': systemInstruction = `You are a Cover Letter Specialist (${language}). Write a compelling hook based on the attached job description and user details.`; break;
-      default: systemInstruction = `You are a helpful Career Assistant (${language}).`;
+      case 'spy': systemInstruction = `You are KronaWork's Elite Job Scout (${language}). Extract salary, requirements, and next steps.`; break;
+      case 'resume': systemInstruction = `You are KronaWork's Resume Architect (${language}). Rewrite this to be ATS-friendly.`; break;
+      case 'review': systemInstruction = `You are KronaWork's Hiring Manager (${language}). Roast this CV constructively.`; break;
+      case 'cover': systemInstruction = `You are KronaWork's Cover Letter Specialist (${language}). Write a compelling hook.`; break;
+      default: systemInstruction = `You are KronaWork, a helpful career assistant (${language}).`;
     }
 
-    // 3. Prepare Payload
     const finalPrompt = `User Query: ${text}\n\n${extractedTextContext}`;
-    const userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [{ type: "text", text: finalPrompt }];
+    // Explicitly typed array to satisfy ESLint
+    const userContent: ChatContentPart[] = [
+      { type: "text", text: finalPrompt }, 
+      ...imagesToSend
+    ];
 
-    imagesToSend.forEach((img) => {
-      userContent.push({ type: "image_url", image_url: { url: img } });
-    });
-
-    // 4. Call OpenAI
     const response = await openai.chat.completions.create({
       model: "gpt-4o", 
       stream: true,
@@ -77,12 +82,12 @@ export async function POST(req: Request) {
       ],
     });
 
-    // 5. Stream Response
     const stream = new ReadableStream({
       async start(controller) {
+        const encoder = new TextEncoder();
         for await (const chunk of response) {
           const content = chunk.choices[0]?.delta?.content || "";
-          if (content) controller.enqueue(new TextEncoder().encode(content));
+          if (content) controller.enqueue(encoder.encode(content));
         }
         controller.close();
       },
