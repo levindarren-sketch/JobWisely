@@ -1,18 +1,18 @@
-
-export const runtime = 'nodejs';
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import PDFParser from "pdf2json"; 
 import * as mammoth from "mammoth";
 
-// Define the exact shape for OpenAI content to replace 'any'
+// 1. SET RUNTIME ONCE
+// Must be 'nodejs' to support PDF and Word parsing libraries.
+export const runtime = 'nodejs';
+
+// 2. DEFINE TYPES
 type ChatContentPart = OpenAI.Chat.Completions.ChatCompletionContentPart;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-export const runtime = 'nodejs'; 
 
 export async function POST(req: Request) {
   try {
@@ -26,13 +26,13 @@ export async function POST(req: Request) {
     let extractedTextContext = "";
     const imagesToSend: ChatContentPart[] = [];
 
+    // 3. FILE PARSING LOGIC
     for (const fileStr of fileStrings) {
       if (fileStr.startsWith("data:application/pdf")) {
         const base64Data = fileStr.split(",")[1];
         const buffer = Buffer.from(base64Data, 'base64');
         
         const pdfText = await new Promise<string>((resolve, reject) => {
-          // Explicitly typing the parser to avoid 'any'
           const parser = new (PDFParser as unknown as new (ctx: null, bit: number) => PDFParser)(null, 1);
           parser.on("pdfParser_dataError", (errData: { parserError: string | Error }) => reject(errData.parserError));
           parser.on("pdfParser_dataReady", () => resolve(parser.getRawTextContent()));
@@ -59,6 +59,7 @@ export async function POST(req: Request) {
       }
     }
 
+    // 4. DEFINE SYSTEM ROLE
     let systemInstruction = "";
     switch (mode) {
       case 'spy': systemInstruction = `You are KronaWork's Elite Job Scout (${language}). Extract salary, requirements, and next steps.`; break;
@@ -68,8 +69,8 @@ export async function POST(req: Request) {
       default: systemInstruction = `You are KronaWork, a helpful career assistant (${language}).`;
     }
 
+    // 5. PREPARE OPENAI PAYLOAD
     const finalPrompt = `User Query: ${text}\n\n${extractedTextContext}`;
-    // Explicitly typed array to satisfy ESLint
     const userContent: ChatContentPart[] = [
       { type: "text", text: finalPrompt }, 
       ...imagesToSend
@@ -84,6 +85,7 @@ export async function POST(req: Request) {
       ],
     });
 
+    // 6. STREAMING ENGINE
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
