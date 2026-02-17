@@ -1,3 +1,5 @@
+
+export const runtime = 'nodejs';
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import PDFParser from "pdf2json"; 
