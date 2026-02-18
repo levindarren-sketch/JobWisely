@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { 
   Search, FileText, UploadCloud, 
   Briefcase, PenTool, Check, Copy, X, 
-  Globe, Plus, Send, Menu, Sparkles, MapPin, Loader2, LogOut, History, Download, FileType, Octagon
+  Globe, Plus, Send, Menu, Sparkles, MapPin, Loader2, LogOut, History, Download, FileType, Octagon, ChevronDown
 } from 'lucide-react';
 
 // --- 1. FIREBASE INITIALIZATION ---
@@ -69,7 +69,7 @@ const translations: Record<LanguageKey, LanguageStrings> = {
     waitingCover: "Ready to write. Who's the employer?", 
     reset: "New Session", generate: "Generate", missionComplete: "Saved", backgroundActive: "Saving...",
     fullTime: "Full-Time", partTime: "Part-Time", remote: "Remote", signIn: "Sign In", signOut: "Sign Out", welcome: "Welcome Back", loginPrompt: "Sign in to save your career progress", googleLogin: "Continue with Google", loginLater: "Sign in later", 
-    loadSave: "Yes, Load Save", startFresh: "No, Start Fresh", resumeSession: "Resume Session?", sessionFound: "Load previous session?", stopped: "Stopped", langNames: { English: "English", Spanish: "Spanish", French: "French", German: "German", Portuguese: "Portuguese", Italian: "Italian", Chinese: "Chinese", Japanese: "Japanese", Russian: "Russian", Arabic: "Arabic" }
+    loadSave: "Yes, Load Save", startFresh: "No, Start Fresh", resumeSession: "Resume Session?", sessionFound: "We found a previous session. Would you like to pick up where you left off?", stopped: "Stopped", langNames: { English: "English", Spanish: "Spanish", French: "French", German: "German", Portuguese: "Portuguese", Italian: "Italian", Chinese: "Chinese", Japanese: "Japanese", Russian: "Russian", Arabic: "Arabic" }
   },
   Spanish: { hubTitle: "JobWisely", back: "Volver", spy: "Buscador", spyDesc: "Buscar Trabajos", resBuilder: "Constructor", resDesc: "Rehacer CV.", review: "Revisión", revDesc: "Analizar CV.", cover: "Carta", covDesc: "Redactar carta.", selectionDesc: "Seleccione herramienta.", uploadLabel: "Subir", jobPlaceholder: "Puesto...", detailsPlaceholder: "Detalles...", result: "Resultado", copy: "Copia", copied: "Copiado", waiting: "¿Cómo ayudo?", waitingSpy: "Listo para buscar.", waitingResume: "Listo para construir.", waitingReview: "Listo para analizar.", waitingCover: "Listo para escribir.", reset: "Reiniciar", langNames: { English: "Inglés", Spanish: "Español", French: "Francés", German: "Alemán", Portuguese: "Portugués", Italian: "Italiano", Chinese: "Chino", Japanese: "Japonés", Russian: "Ruso", Arabic: "Árabe" }, generate: "Generar", missionComplete: "Guardado", backgroundActive: "Guardando...", fullTime: "Tiempo Completo", partTime: "Medio Tiempo", remote: "Remoto", signIn: "Entrar", signOut: "Salir", welcome: "Bienvenido", loginPrompt: "Inicia sesión", googleLogin: "Google", loginLater: "Luego", loadSave: "Cargar", startFresh: "Nuevo", resumeSession: "¿Reanudar?", sessionFound: "¿Cargar último?", stopped: "Detenido" },
   French: { hubTitle: "JobWisely", back: "Retour", spy: "Éclaireur", spyDesc: "Trouver Emplois", resBuilder: "Créateur", resDesc: "Refaire CV.", review: "Révision", revDesc: "Analyser CV.", cover: "Lettre", covDesc: "Rédiger lettre.", selectionDesc: "Outil.", uploadLabel: "Charger", jobPlaceholder: "Poste...", detailsPlaceholder: "Détails...", result: "Résultat", copy: "Copier", copied: "Copié", waiting: "Aide?", waitingSpy: "Prêt.", waitingResume: "Prêt.", waitingReview: "Prêt.", waitingCover: "Prêt.", reset: "Nouveau", langNames: { English: "Anglais", Spanish: "Espagnol", French: "Français", German: "Allemand", Portuguese: "Portugais", Italian: "Italien", Chinese: "Chinois", Japanese: "Japonés", Russian: "Russe", Arabic: "Arabe" }, generate: "Générer", missionComplete: "Enregistré", backgroundActive: "En cours...", fullTime: "Temps Plein", partTime: "Temps Partiel", remote: "Télétravail", signIn: "Connexion", signOut: "Déconnexion", welcome: "Bonjour", loginPrompt: "Connectez-vous", googleLogin: "Google", loginLater: "Plus tard", loadSave: "Oui", startFresh: "Non", resumeSession: "Reprendre?", sessionFound: "Charger?", stopped: "Arrêté" },
@@ -256,7 +256,6 @@ export default function Home() {
       const fd = new FormData();
       fd.append('mode', m); fd.append('language', language);
       fd.append('text', txt);
-      // SEND LOCATION AND HOURS FOR SCOUT MODE
       if (m === 'spy') {
           fd.append('location', toolState.spy.location || '');
           fd.append('hours', toolState.spy.hours || 'Full-Time');
@@ -291,12 +290,6 @@ export default function Home() {
   }, [toolState, language, mode, loading]);
 
   const currentGreeting = useMemo(() => String(t[mode === 'selection' ? 'waiting' : `waiting${mode.charAt(0).toUpperCase() + mode.slice(1)}` as keyof LanguageStrings]), [mode, t]);
-  const currentTutorial = useMemo(() => {
-    const mapping: Record<string, keyof LanguageStrings> = {
-      selection: 'selectionDesc', spy: 'spyDesc', resume: 'resDesc', review: 'revDesc', cover: 'covDesc'
-    };
-    return String(t[mapping[mode] || 'selectionDesc']);
-  }, [mode, t]);
 
   return (
     <div className="flex h-screen bg-[#131314] text-[#e3e3e3] font-sans overflow-hidden" dir={language === 'Arabic' ? 'rtl' : 'ltr'}>
@@ -314,16 +307,16 @@ export default function Home() {
         </div>
       )}
 
-      {/* CLOUD RESTORE */}
+      {/* BIG SAVE RESTORE PROMPT */}
       {showLoadPrompt && (
-        <div className="fixed bottom-6 right-6 bg-[#1e1f20] border border-blue-500/30 p-5 rounded-2xl shadow-2xl z-[100] animate-in slide-in-from-bottom-5">
-           <div className="flex items-start gap-4 mb-4">
-              <div className="bg-blue-500/20 p-3 rounded-xl text-blue-400 shrink-0"><History size={24} /></div>
-              <div><h4 className="font-bold text-white mb-1">{t.resumeSession}</h4><p className="text-xs text-gray-400">{t.sessionFound}</p></div>
+        <div className="fixed bottom-6 right-6 bg-[#1e1f20] border border-blue-500/30 p-8 rounded-3xl shadow-2xl z-[100] animate-in slide-in-from-bottom-5 max-w-sm w-full">
+           <div className="flex items-start gap-4 mb-6">
+              <div className="bg-blue-500/20 p-4 rounded-2xl text-blue-400 shrink-0"><History size={32} /></div>
+              <div><h4 className="font-black text-xl text-white mb-2">{t.resumeSession}</h4><p className="text-sm text-gray-400 leading-relaxed">{t.sessionFound}</p></div>
            </div>
-           <div className="flex gap-2">
-              <button onClick={handleRestore} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2.5 rounded-lg transition-all active:scale-95">{t.loadSave}</button>
-              <button onClick={() => setShowLoadPrompt(false)} className="flex-1 bg-[#28292a] hover:bg-[#333537] text-gray-400 hover:text-white text-xs font-bold py-2.5 rounded-lg transition-all active:scale-95">{t.startFresh}</button>
+           <div className="flex flex-col gap-3">
+              <button onClick={handleRestore} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-blue-500/20">{t.loadSave}</button>
+              <button onClick={() => setShowLoadPrompt(false)} className="w-full bg-[#28292a] hover:bg-[#333537] text-gray-400 hover:text-white font-bold py-3.5 rounded-xl transition-all active:scale-95">{t.startFresh}</button>
            </div>
         </div>
       )}
@@ -345,6 +338,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* SIDEBAR */}
       <aside className={`bg-[#1e1f20] flex flex-col transition-all duration-300 relative z-20 overflow-hidden ${sidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0'}`}>
         <div className="p-6 flex items-center gap-3 text-white font-bold"><div className="bg-blue-600 p-1.5 rounded-lg"><Sparkles size={18}/></div><span className="text-lg">JobWisely</span></div>
         <div className="flex-1 px-3 space-y-1">
@@ -399,7 +393,6 @@ export default function Home() {
                       }}>{msg.content}</ReactMarkdown>
                     </div>
                     {msg.isStopped && <div className="text-xs text-gray-400 mt-3 flex items-center gap-2 animate-pulse"><Octagon size={12}/> {t.stopped}</div>}
-
                     {msg.role === 'assistant' && !loading && (
                       <div className="flex items-center gap-2 mt-3">
                           <button onClick={() => copyText(msg.content, msg.id)} className="p-1 text-gray-400 hover:text-white transition-colors">
@@ -426,30 +419,30 @@ export default function Home() {
                 <div key={mode} className="h-[60vh] flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500">
                     <div className={`p-8 rounded-full mb-8 bg-gradient-to-b ${theme.bg} to-transparent animate-pulse shadow-2xl`}><Sparkles size={72} className={theme.icon}/></div>
                     <h3 className="text-4xl font-black text-white italic tracking-tighter mb-2">{currentGreeting}</h3>
-                    <p className="text-gray-400 text-lg font-medium max-w-md italic">{currentTutorial}</p>
+                    <p className="text-gray-400 text-lg font-medium max-w-md italic">{translations[language].selectionDesc}</p>
                 </div>
             )}
             <div ref={messagesEndRef} className="h-4" />
           </div>
         </div>
 
+        {/* INPUT AREA - CONNECTED LOCATION & SUPER LONG INPUT */}
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#131314] via-[#131314]/90 to-transparent">
-          {/* LOCATION & HOURS INPUTS (MOVED TO BOTTOM) */}
-          {mode === 'spy' && (
-             <div className="max-w-3xl mx-auto mb-3 flex gap-2 animate-in slide-in-from-bottom-2">
-                <div className="flex-1 flex items-center gap-2 bg-[#1e1f20] border border-white/10 rounded-full px-4 py-2 shadow-lg">
-                   <MapPin size={14} className="text-purple-400" />
-                   <input 
-                      className="bg-transparent outline-none text-xs w-full text-white placeholder:text-gray-500"
-                      placeholder="Location (e.g. New York)..."
-                      value={toolState.spy.location}
-                      onChange={e => setToolState(p => ({ ...p, spy: { ...p.spy, location: e.target.value } }))}
-                   />
-                </div>
-                <div className="flex items-center gap-2 bg-[#1e1f20] border border-white/10 rounded-full px-4 py-2 shadow-lg">
-                   <Briefcase size={14} className="text-blue-400" />
-                   <select 
-                      className="bg-transparent outline-none text-xs text-white cursor-pointer appearance-none"
+          <div className="max-w-3xl mx-auto bg-[#1e1f20] rounded-[2.5rem] border border-white/5 p-4 shadow-2xl relative transition-all duration-300">
+             
+             {/* SCOUT INPUTS - INSIDE THE BUBBLE, CONNECTED, LONG */}
+             {mode === 'spy' && (
+               <div className="flex items-center gap-3 mb-3 px-2 border-b border-white/5 pb-3">
+                  <div className="bg-purple-500/10 p-2 rounded-full"><MapPin size={16} className="text-purple-400"/></div>
+                  <input 
+                     className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-gray-500"
+                     placeholder="Target Location (e.g. New York, Remote)..."
+                     value={toolState.spy.location}
+                     onChange={e => setToolState(p => ({ ...p, spy: { ...p.spy, location: e.target.value } }))}
+                  />
+                  <div className="h-4 w-px bg-white/10 mx-2"></div>
+                  <select 
+                      className="bg-transparent outline-none text-sm text-gray-300 cursor-pointer hover:text-white transition-colors"
                       value={toolState.spy.hours}
                       onChange={e => setToolState(p => ({ ...p, spy: { ...p.spy, hours: e.target.value } }))}
                    >
@@ -458,11 +451,10 @@ export default function Home() {
                       <option className="bg-[#1e1f20]" value="Remote">{t.remote}</option>
                       <option className="bg-[#1e1f20]" value="Contract">Contract</option>
                    </select>
-                </div>
-             </div>
-          )}
+                   <ChevronDown size={14} className="text-gray-500"/>
+               </div>
+             )}
 
-          <div className="max-w-3xl mx-auto bg-[#1e1f20] rounded-[2.5rem] border border-white/5 p-3 shadow-2xl relative transition-all duration-300">
              <div className="flex items-end gap-2 px-2 relative z-10">
                <button onClick={() => fileInputRef.current?.click()} className="p-3 hover:bg-[#333537] text-gray-400 rounded-full transition-all shrink-0 hover:scale-110 active:scale-95">
                   <UploadCloud size={24}/>
