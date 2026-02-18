@@ -1,10 +1,11 @@
 'use client';
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { 
   Search, FileText, UploadCloud, 
   Briefcase, PenTool, Check, Copy, X, 
-  Globe, Plus, Send, Menu, Sparkles, Square, MapPin, LogIn, ArrowRight, Loader2, LogOut, History, Linkedin, ExternalLink, Octagon, Zap, Download, FileType
+  Globe, Plus, Send, Menu, Sparkles, MapPin, Loader2, LogOut, History, Download, FileType, Octagon, ChevronDown
 } from 'lucide-react';
 
 // --- 1. FIREBASE IMPORTS ---
@@ -52,10 +53,10 @@ interface LanguageStrings {
   stopped: string;
 }
 
-// --- 3. TRANSLATIONS ---
+// --- 3. TRANSLATIONS (Updated to JobWisely) ---
 const translations: Record<LanguageKey, LanguageStrings> = {
   English: { 
-    hubTitle: "KronaWork", back: "Back", spy: "Job Scout", spyDesc: "Find Jobs", 
+    hubTitle: "JobWisely", back: "Back", spy: "Job Scout", spyDesc: "Find Jobs", 
     resBuilder: "Resume Builder", resDesc: "Upload your CV and paste the job description to rebuild it.", 
     review: "CV Review", revDesc: "Upload your CV and the job specs to find gaps.", 
     cover: "Cover Letter", covDesc: "Paste the job description and your details to draft it.", 
@@ -69,15 +70,15 @@ const translations: Record<LanguageKey, LanguageStrings> = {
     fullTime: "Full-Time", partTime: "Part-Time", remote: "Remote", signIn: "Sign In", signOut: "Sign Out", welcome: "Welcome Back", loginPrompt: "Sign in to save your career progress", googleLogin: "Continue with Google", loginLater: "Sign in later", 
     loadSave: "Yes, Load Save", startFresh: "No, Start Fresh", resumeSession: "Resume Session?", sessionFound: "Do you want to load the last save since you visited?", stopped: "You stopped this generation", langNames: { English: "English", Spanish: "Spanish", French: "French", German: "German", Portuguese: "Portuguese", Italian: "Italian", Chinese: "Chinese", Japanese: "Japanese", Russian: "Russian", Arabic: "Arabic" }
   },
-  Spanish: { hubTitle: "KronaWork", back: "Volver", spy: "Buscador", spyDesc: "Buscar Trabajos", resBuilder: "Constructor", resDesc: "Sube tu CV y pega el trabajo para reconstruirlo.", review: "Revisión", revDesc: "Sube tu CV y requisitos para encontrar fallos.", cover: "Carta", covDesc: "Pega la descripción y tus datos para redactar.", selectionDesc: "Seleccione una herramienta para comenzar.", uploadLabel: "Subir", jobPlaceholder: "Puesto...", detailsPlaceholder: "¿Cómo ayudo?", result: "Resultado", copy: "Copia", copied: "Copiado", waiting: "¿Cómo puedo ayudarte?", waitingSpy: "Listo para buscar.", waitingResume: "Listo para construir.", waitingReview: "Listo para analizar.", waitingCover: "Listo para escribir.", reset: "Reiniciar", langNames: { English: "Inglés", Spanish: "Español", French: "Francés", German: "Alemán", Portuguese: "Portugués", Italian: "Italiano", Chinese: "Chino", Japanese: "Japonés", Russian: "Ruso", Arabic: "Árabe" }, generate: "Generar", missionComplete: "Guardado", backgroundActive: "Guardando...", fullTime: "Tiempo Completo", partTime: "Medio Tiempo", remote: "Remoto", signIn: "Iniciar Sesión", signOut: "Cerrar Sesión", welcome: "Bienvenido", loginPrompt: "Inicia sesión para guardar", googleLogin: "Continuar con Google", loginLater: "Más tarde", loadSave: "Sí, Cargar", startFresh: "No, Empezar", resumeSession: "¿Reanudar Sesión?", sessionFound: "¿Quieres cargar lo último guardado?", stopped: "Has detenido la generación" },
-  French: { hubTitle: "KronaWork", back: "Retour", spy: "Éclaireur", spyDesc: "Trouver Emplois", resBuilder: "Créateur", resDesc: "Chargez votre CV et collez le poste pour le refaire.", review: "Révision", revDesc: "Chargez votre CV et le poste pour analyser les lacunes.", cover: "Lettre", covDesc: "Collez le poste et vos infos pour rédiger.", selectionDesc: "Sélectionnez un outil pour commencer.", uploadLabel: "Charger", jobPlaceholder: "Poste...", detailsPlaceholder: "Comment aider?", result: "Résultat", copy: "Copier", copied: "Copié", waiting: "Comment aider?", waitingSpy: "Recherche.", waitingResume: "Création.", waitingReview: "Analyse.", waitingCover: "Rédaction.", reset: "Réinitialiser", langNames: { English: "Anglais", Spanish: "Espagnol", French: "Français", German: "Allemand", Portuguese: "Portugais", Italian: "Italien", Chinese: "Chinois", Japanese: "Japonés", Russian: "Russe", Arabic: "Arabe" }, generate: "GÉNÉRER", missionComplete: "Enregistré", backgroundActive: "Enregistrement...", fullTime: "Temps Plein", partTime: "Temps Partiel", remote: "Télétravail", signIn: "Connexion", signOut: "Déconnexion", welcome: "Bon retour", loginPrompt: "Connectez-vous pour sauvegarder", googleLogin: "Continuer avec Google", loginLater: "Plus tard", loadSave: "Oui, Charger", startFresh: "Non, Nouveau", resumeSession: "Reprendre ?", sessionFound: "Voulez-vous charger la dernière sauvegarde ?", stopped: "Vous avez arrêté la génération" },
-  German: { hubTitle: "KronaWork", back: "Zurück", spy: "Scout", spyDesc: "Jobs Finden", resBuilder: "Editor", resDesc: "CV hochladen und Job einfügen zum Neuerstellen.", review: "Check", revDesc: "CV hochladen und Job einfügen zur Analyse.", cover: "Brief", covDesc: "Job und Details einfügen zum Schreiben.", selectionDesc: "Wählen Sie ein Tool aus.", uploadLabel: "Hochladen", jobPlaceholder: "Job...", detailsPlaceholder: "Hilfe?", result: "Ergebnis", copy: "Kopieren", copied: "Kopiert", waiting: "Wie helfen?", waitingSpy: "Suche.", waitingResume: "Editor.", waitingReview: "Check.", waitingCover: "Entwurf.", reset: "Reset", langNames: { English: "Englisch", Spanish: "Spanisch", French: "Französisch", German: "Deutsch", Portuguese: "Portugiesisch", Italian: "Italienisch", Chinese: "Chinesisch", Japanese: "Japanisch", Russian: "Russisch", Arabic: "Arabisch" }, generate: "GENERIEREN", missionComplete: "Gespeichert", backgroundActive: "Speichert...", fullTime: "Vollzeit", partTime: "Teilzeit", remote: "Remote", signIn: "Anmelden", signOut: "Abmelden", welcome: "Willkommen", loginPrompt: "Anmelden zum Speichern", googleLogin: "Weiter mit Google", loginLater: "Später", loadSave: "Ja, Laden", startFresh: "Nein, Neu", resumeSession: "Sitzung laden?", sessionFound: "Möchten Sie den letzten Stand laden?", stopped: "Sie haben die Generierung gestoppt" },
-  Portuguese: { hubTitle: "KronaWork", back: "Voltar", spy: "Buscador", spyDesc: "Achar Vagas", resBuilder: "Criador", resDesc: "Envie o CV e cole a vaga para refazer.", review: "Revisão", revDesc: "Envie o CV e a vaga para analizar lacunas.", cover: "Carta", covDesc: "Cole a vaga e seus datos para escrever.", selectionDesc: "Selecione uma ferramenta.", uploadLabel: "Subir", jobPlaceholder: "Vaga...", detailsPlaceholder: "Ajuda?", result: "Resultado", copy: "Copiar", copied: "Copiado", waiting: "Como ajudar?", waitingSpy: "Busca.", waitingResume: "Criação.", waitingReview: "Análise.", waitingCover: "Redação.", reset: "Reset", langNames: { English: "Inglés", Spanish: "Espanhol", French: "Francés", German: "Alemão", Portuguese: "Portugués", Italian: "Italiano", Chinese: "Chinês", Japanese: "Japonés", Russian: "Ruso", Arabic: "Árabe" }, generate: "GERAR", missionComplete: "Salvo", backgroundActive: "Salvando...", fullTime: "Tempo Integral", partTime: "Meio Período", remote: "Remoto", signIn: "Entrar", signOut: "Sair", welcome: "Bem-vindo", loginPrompt: "Entre para salvar", googleLogin: "Continuar com Google", loginLater: "Mais tarde", loadSave: "Sim, Carregar", startFresh: "Não, Início", resumeSession: "Retomar Sessão?", sessionFound: "Deseja carregar o último salvamento?", stopped: "Você parou a geração" },
-  Italian: { hubTitle: "KronaWork", back: "Indietro", spy: "Scout", spyDesc: "Trova Lavoro", resBuilder: "Crea", resDesc: "Carica il CV e incolla il lavoro per rifarlo.", review: "Revisione", revDesc: "Carica il CV e il lavoro per l'analisi.", cover: "Lettera", covDesc: "Incolla il lavoro e le tue info per scrivere.", selectionDesc: "Seleziona uno strumento.", uploadLabel: "Carica", jobPlaceholder: "Lavoro...", detailsPlaceholder: "Aiuto?", result: "Résultato", copy: "Copia", copied: "Copiato", waiting: "Pronto.", waitingSpy: "Cerca.", waitingResume: "Crea.", waitingReview: "Analisi.", waitingCover: "Bozza.", reset: "Reset", langNames: { English: "Inglese", Spanish: "Spagnolo", French: "Francese", German: "Tedesco", Portuguese: "Portoghese", Italian: "Italiano", Chinese: "Cinese", Japanese: "Giapponese", Russian: "Russo", Arabic: "Arabo" }, generate: "GENERA", missionComplete: "Salvato", backgroundActive: "Salvataggio...", fullTime: "Full-Time", partTime: "Part-Time", remote: "Remoto", signIn: "Accedi", signOut: "Esci", welcome: "Bentornato", loginPrompt: "Accedi per salvare", googleLogin: "Continua con Google", loginLater: "Più tardi", loadSave: "Sì, Carica", startFresh: "No, Nuovo", resumeSession: "Riprendere?", sessionFound: "Vuoi caricare l'ultimo salvataggio?", stopped: "Hai interrotto la generazione" },
-  Chinese: { hubTitle: "KronaWork", back: "返回", spy: "搜索", spyDesc: "寻找职位", resBuilder: "生成器", resDesc: "上传简历并粘贴职位进行重构。", review: "复审", revDesc: "上传简历和职位进行不足分析。", cover: "求职信", covDesc: "粘贴职位 and 个人信息进行起草。", selectionDesc: "请从侧边栏选择工具。", uploadLabel: "上传", jobPlaceholder: "行业...", detailsPlaceholder: "如何帮您？", result: "结果", copy: "复制", copied: "已复制", waiting: "准备好了。", waitingSpy: "准备搜索。", waitingResume: "准备生成。", waitingReview: "准备分析。", waitingCover: "准备起草。", reset: "重置", langNames: { English: "英语", Spanish: "西班牙语", French: "法语", German: "德语", Portuguese: "葡萄牙语", Italian: "意大利语", Chinese: "中文", Japanese: "日语", Russian: "俄语", Arabic: "阿拉伯语" }, generate: "生成", missionComplete: "已保存", backgroundActive: "保存中...", fullTime: "全职", partTime: "兼职", remote: "远程", signIn: "登录", signOut: "登出", welcome: "欢迎回来", loginPrompt: "登录以保存进度", googleLogin: "使用 Google 继续", loginLater: "稍后", loadSave: "是的，加载", startFresh: "不，重新开始", resumeSession: "恢复会话？", sessionFound: "您要加载上次保存的内容吗？", stopped: "您已停止生成" },
-  Japanese: { hubTitle: "KronaWork", back: "戻る", spy: "スカウト", spyDesc: "仕事を探す", resBuilder: "作成", resDesc: "CVをアップし案件を貼って再構築します。", review: "添削", revDesc: "CVと案件をアップして分析します。", cover: "レター", covDesc: "案件と詳細を貼って作成します。", selectionDesc: "ツールを選択してください。", uploadLabel: "アップ", jobPlaceholder: "職種...", detailsPlaceholder: "お手伝いは？", result: "結果", copy: "コピー", copied: "完了", waiting: "準備完了。", waitingSpy: "準備完了。", waitingResume: "準備完了。", waitingReview: "準備完了。", waitingCover: "準備完了。", reset: "リセット", langNames: { English: "英語", Spanish: "スペイン語", French: "フランス語", German: "ドイツ語", Portuguese: "ポルトガル語", Italian: "イタリア語", Chinese: "中国語", Japanese: "日本語", Russian: "ロシア語", Arabic: "アラビア語" }, generate: "生成", missionComplete: "保存しました", backgroundActive: "保存中...", fullTime: "フルタイム", partTime: "パート", remote: "リモート", signIn: "サインイン", signOut: "サインアウト", welcome: "お帰りなさい", loginPrompt: "保存するにはログイン", googleLogin: "Googleで続行", loginLater: "後で", loadSave: "はい、ロード", startFresh: "いいえ、新規", resumeSession: "再開しますか？", sessionFound: "前回保存した内容を読み込みますか？", stopped: "生成を停止しました" },
-  Russian: { hubTitle: "KronaWork", back: "Назад", spy: "Поиск", spyDesc: "Поиск Работы", resBuilder: "Создать", resDesc: "Загрузите CV и вставьте вакансию для сборки.", review: "Обзор", revDesc: "Загрузите CV и вакансию для проверки.", cover: "Письмо", covDesc: "Вставьте вакансию и данные для письма.", selectionDesc: "Выберите инструмент.", uploadLabel: "Загрузить", jobPlaceholder: "Отрасль...", detailsPlaceholder: "Чем помочь?", result: "Результат", copy: "Копия", copied: "Готово", waiting: "Чем помочь?", waitingSpy: "Готов.", waitingResume: "Готов.", waitingReview: "Готов.", waitingCover: "Готов.", reset: "Сброс", langNames: { English: "Английский", Spanish: "Испанский", French: "French", German: "German", Portuguese: "Portuguese", Italian: "Italian", Chinese: "Chinese", Japanese: "Japanese", Russian: "Russian", Arabic: "Arabic" }, generate: "СОЗДАТЬ", missionComplete: "Сохранено", backgroundActive: "Сохранение...", fullTime: "Полный день", partTime: "Частично", remote: "Удаленно", signIn: "Войти", signOut: "Выйти", welcome: "С возвращением", loginPrompt: "Войдите для сохранения", googleLogin: "Войти через Google", loginLater: "Позже", loadSave: "Да, Загрузить", startFresh: "Нет, Заново", resumeSession: "Продолжить?", sessionFound: "Хотите загрузить последнее сохранение?", stopped: "Вы остановили генерацию" },
-  Arabic: { hubTitle: "KronaWork", back: "العودة", spy: "كشاف", spyDesc: "البحث عن وظائف", resBuilder: "منشئ", resDesc: "ارفع السيرة والصق الوظيفة لإعادة البناء.", review: "مراجعة", revDesc: "ارفع السيرة والوظيفة لتحليل الفجوات.", cover: "خطاب", covDesc: "الصق الوظيفة وبياناتك لكتابة الخطاب.", selectionDesc: "اختر أداة من الشريط الجانبي.", uploadLabel: "رفع", jobPlaceholder: "الوظيفة...", detailsPlaceholder: "كيف أساعدك؟", result: "النتيجة", copy: "نسخ", copied: "تم", waiting: "كيف أساعدك؟", waitingSpy: "جاهز للبحث.", waitingResume: "جاهز للبناء.", waitingReview: "جاهز للتحليل.", waitingCover: "جاهز للكتابة.", reset: "جديد", langNames: { English: "الإنجليزية", Arabic: "العربية", Spanish: "الإسبانية", French: "الفرنسية", German: "الألمانية", Portuguese: "البرتغالية", Italian: "الإيطالية", Chinese: "الصينية", Japanese: "اليابانية", Russian: "الروسية" }, generate: "إنشاء", missionComplete: "تم الحفظ", backgroundActive: "جارٍ الحفظ...", fullTime: "دوام كامل", partTime: "دوام جزئي", remote: "عن بعد", signIn: "توسجيل الدخول", signOut: "خروج", welcome: "مرحباً بعودتك", loginPrompt: "سجل الدخول لحفظ تقدمك", googleLogin: "المتابعة مع Google", loginLater: "لاحقاً", loadSave: "نعم، تحميل", startFresh: "لا، جديد", resumeSession: "استئناف الجلسة؟", sessionFound: "هل تريد تحميل آخر حفظ منذ زيارتك؟", stopped: "لقد أوقفت هذا التوليد" }
+  Spanish: { hubTitle: "JobWisely", back: "Volver", spy: "Buscador", spyDesc: "Buscar Trabajos", resBuilder: "Constructor", resDesc: "Sube tu CV y pega el trabajo para reconstruirlo.", review: "Revisión", revDesc: "Sube tu CV y requisitos para encontrar fallos.", cover: "Carta", covDesc: "Pega la descripción y tus datos para redactar.", selectionDesc: "Seleccione una herramienta para comenzar.", uploadLabel: "Subir", jobPlaceholder: "Puesto...", detailsPlaceholder: "¿Cómo ayudo?", result: "Resultado", copy: "Copia", copied: "Copiado", waiting: "¿Cómo puedo ayudarte?", waitingSpy: "Listo para buscar.", waitingResume: "Listo para construir.", waitingReview: "Listo para analizar.", waitingCover: "Listo para escribir.", reset: "Reiniciar", langNames: { English: "Inglés", Spanish: "Español", French: "Francés", German: "Alemán", Portuguese: "Portugués", Italian: "Italiano", Chinese: "Chino", Japanese: "Japonés", Russian: "Ruso", Arabic: "Árabe" }, generate: "Generar", missionComplete: "Guardado", backgroundActive: "Guardando...", fullTime: "Tiempo Completo", partTime: "Medio Tiempo", remote: "Remoto", signIn: "Iniciar Sesión", signOut: "Cerrar Sesión", welcome: "Bienvenido", loginPrompt: "Inicia sesión para guardar", googleLogin: "Continuar con Google", loginLater: "Más tarde", loadSave: "Sí, Cargar", startFresh: "No, Empezar", resumeSession: "¿Reanudar Sesión?", sessionFound: "¿Quieres cargar lo último guardado?", stopped: "Has detenido la generación" },
+  French: { hubTitle: "JobWisely", back: "Retour", spy: "Éclaireur", spyDesc: "Trouver Emplois", resBuilder: "Créateur", resDesc: "Chargez votre CV et collez le poste pour le refaire.", review: "Révision", revDesc: "Chargez votre CV et le poste pour analyser les lacunes.", cover: "Lettre", covDesc: "Collez le poste et vos infos pour rédiger.", selectionDesc: "Sélectionnez un outil pour commencer.", uploadLabel: "Charger", jobPlaceholder: "Poste...", detailsPlaceholder: "Comment aider?", result: "Résultat", copy: "Copier", copied: "Copié", waiting: "Comment aider?", waitingSpy: "Recherche.", waitingResume: "Création.", waitingReview: "Analyse.", waitingCover: "Rédaction.", reset: "Réinitialiser", langNames: { English: "Anglais", Spanish: "Espagnol", French: "Français", German: "Allemand", Portuguese: "Portugais", Italian: "Italien", Chinese: "Chinois", Japanese: "Japonés", Russian: "Russe", Arabic: "Arabe" }, generate: "GÉNÉRER", missionComplete: "Enregistré", backgroundActive: "Enregistrement...", fullTime: "Temps Plein", partTime: "Temps Partiel", remote: "Télétravail", signIn: "Connexion", signOut: "Déconnexion", welcome: "Bon retour", loginPrompt: "Connectez-vous pour sauvegarder", googleLogin: "Continuer avec Google", loginLater: "Plus tard", loadSave: "Oui, Charger", startFresh: "Non, Nouveau", resumeSession: "Reprendre ?", sessionFound: "Voulez-vous charger la dernière sauvegarde ?", stopped: "Vous avez arrêté la génération" },
+  German: { hubTitle: "JobWisely", back: "Zurück", spy: "Scout", spyDesc: "Jobs Finden", resBuilder: "Editor", resDesc: "CV hochladen und Job einfügen zum Neuerstellen.", review: "Check", revDesc: "CV hochladen und Job einfügen zur Analyse.", cover: "Brief", covDesc: "Job und Details einfügen zum Schreiben.", selectionDesc: "Wählen Sie ein Tool aus.", uploadLabel: "Hochladen", jobPlaceholder: "Job...", detailsPlaceholder: "Hilfe?", result: "Ergebnis", copy: "Kopieren", copied: "Kopiert", waiting: "Wie helfen?", waitingSpy: "Suche.", waitingResume: "Editor.", waitingReview: "Check.", waitingCover: "Entwurf.", reset: "Reset", langNames: { English: "Englisch", Spanish: "Spanisch", French: "Französisch", German: "Deutsch", Portuguese: "Portugiesisch", Italian: "Italienisch", Chinese: "Chinesisch", Japanese: "Japanisch", Russian: "Russisch", Arabic: "Arabisch" }, generate: "GENERIEREN", missionComplete: "Gespeichert", backgroundActive: "Speichert...", fullTime: "Vollzeit", partTime: "Teilzeit", remote: "Remote", signIn: "Anmelden", signOut: "Abmelden", welcome: "Willkommen", loginPrompt: "Anmelden zum Speichern", googleLogin: "Weiter mit Google", loginLater: "Später", loadSave: "Ja, Laden", startFresh: "Nein, Neu", resumeSession: "Sitzung laden?", sessionFound: "Möchten Sie den letzten Stand laden?", stopped: "Sie haben die Generierung gestoppt" },
+  Portuguese: { hubTitle: "JobWisely", back: "Voltar", spy: "Buscador", spyDesc: "Achar Vagas", resBuilder: "Criador", resDesc: "Envie o CV e cole a vaga para refazer.", review: "Revisão", revDesc: "Envie o CV e a vaga para analizar lacunas.", cover: "Carta", covDesc: "Cole a vaga e seus datos para escrever.", selectionDesc: "Selecione uma ferramenta.", uploadLabel: "Subir", jobPlaceholder: "Vaga...", detailsPlaceholder: "Ajuda?", result: "Resultado", copy: "Copiar", copied: "Copiado", waiting: "Como ajudar?", waitingSpy: "Busca.", waitingResume: "Criação.", waitingReview: "Análise.", waitingCover: "Redação.", reset: "Reset", langNames: { English: "Inglés", Spanish: "Espanhol", French: "Francés", German: "Alemão", Portuguese: "Portugués", Italian: "Italiano", Chinese: "Chinês", Japanese: "Japonés", Russian: "Ruso", Arabic: "Árabe" }, generate: "GERAR", missionComplete: "Salvo", backgroundActive: "Salvando...", fullTime: "Tempo Integral", partTime: "Meio Período", remote: "Remoto", signIn: "Entrar", signOut: "Sair", welcome: "Bem-vindo", loginPrompt: "Entre para salvar", googleLogin: "Continuar com Google", loginLater: "Mais tarde", loadSave: "Sim, Carregar", startFresh: "Não, Início", resumeSession: "Retomar Sessão?", sessionFound: "Deseja carregar o último salvamento?", stopped: "Você parou a geração" },
+  Italian: { hubTitle: "JobWisely", back: "Indietro", spy: "Scout", spyDesc: "Trova Lavoro", resBuilder: "Crea", resDesc: "Carica il CV e incolla il lavoro per rifarlo.", review: "Revisione", revDesc: "Carica il CV e il lavoro per l'analisi.", cover: "Lettera", covDesc: "Incolla il lavoro e le tue info per scrivere.", selectionDesc: "Seleziona uno strumento.", uploadLabel: "Carica", jobPlaceholder: "Lavoro...", detailsPlaceholder: "Aiuto?", result: "Résultato", copy: "Copia", copied: "Copiato", waiting: "Pronto.", waitingSpy: "Cerca.", waitingResume: "Crea.", waitingReview: "Analisi.", waitingCover: "Bozza.", reset: "Reset", langNames: { English: "Inglese", Spanish: "Spagnolo", French: "Francese", German: "Tedesco", Portuguese: "Portoghese", Italian: "Italiano", Chinese: "Cinese", Japanese: "Giapponese", Russian: "Russo", Arabic: "Arabo" }, generate: "GENERA", missionComplete: "Salvato", backgroundActive: "Salvataggio...", fullTime: "Full-Time", partTime: "Part-Time", remote: "Remoto", signIn: "Accedi", signOut: "Esci", welcome: "Bentornato", loginPrompt: "Accedi per salvare", googleLogin: "Continua con Google", loginLater: "Più tardi", loadSave: "Sì, Carica", startFresh: "No, Nuovo", resumeSession: "Riprendere?", sessionFound: "Vuoi caricare l'ultimo salvataggio?", stopped: "Hai interrotto la generazione" },
+  Chinese: { hubTitle: "JobWisely", back: "返回", spy: "搜索", spyDesc: "寻找职位", resBuilder: "生成器", resDesc: "上传简历并粘贴职位进行重构。", review: "复审", revDesc: "上传简历和职位进行不足分析。", cover: "求职信", covDesc: "粘贴职位 and 个人信息进行起草。", selectionDesc: "请从侧边栏选择工具。", uploadLabel: "上传", jobPlaceholder: "行业...", detailsPlaceholder: "如何帮您？", result: "结果", copy: "复制", copied: "已复制", waiting: "准备好了。", waitingSpy: "准备搜索。", waitingResume: "准备生成。", waitingReview: "准备分析。", waitingCover: "准备起草。", reset: "重置", langNames: { English: "英语", Spanish: "西班牙语", French: "法语", German: "德语", Portuguese: "葡萄牙语", Italian: "意大利语", Chinese: "中文", Japanese: "日语", Russian: "俄语", Arabic: "阿拉伯语" }, generate: "生成", missionComplete: "已保存", backgroundActive: "保存中...", fullTime: "全职", partTime: "兼职", remote: "远程", signIn: "登录", signOut: "登出", welcome: "欢迎回来", loginPrompt: "登录以保存进度", googleLogin: "使用 Google 继续", loginLater: "稍后", loadSave: "是的，加载", startFresh: "不，重新开始", resumeSession: "恢复会话？", sessionFound: "您要加载上次保存的内容吗？", stopped: "您已停止生成" },
+  Japanese: { hubTitle: "JobWisely", back: "戻る", spy: "スカウト", spyDesc: "仕事を探す", resBuilder: "作成", resDesc: "CVをアップし案件を貼って再構築します。", review: "添削", revDesc: "CVと案件をアップして分析します。", cover: "レター", covDesc: "案件と詳細を貼って作成します。", selectionDesc: "ツールを選択してください。", uploadLabel: "アップ", jobPlaceholder: "職種...", detailsPlaceholder: "お手伝いは？", result: "結果", copy: "コピー", copied: "完了", waiting: "準備完了。", waitingSpy: "準備完了。", waitingResume: "準備完了。", waitingReview: "準備完了。", waitingCover: "準備完了。", reset: "リセット", langNames: { English: "英語", Spanish: "スペイン語", French: "フランス語", German: "ドイツ語", Portuguese: "ポルトガル語", Italian: "イタリア語", Chinese: "中国語", Japanese: "日本語", Russian: "ロシア語", Arabic: "アラビア語" }, generate: "生成", missionComplete: "保存しました", backgroundActive: "保存中...", fullTime: "フルタイム", partTime: "パート", remote: "リモート", signIn: "サインイン", signOut: "サインアウト", welcome: "お帰りなさい", loginPrompt: "保存するにはログイン", googleLogin: "Googleで続行", loginLater: "後で", loadSave: "はい、ロード", startFresh: "いいえ、新規", resumeSession: "再開しますか？", sessionFound: "前回保存した内容を読み込みますか？", stopped: "生成を停止しました" },
+  Russian: { hubTitle: "JobWisely", back: "Назад", spy: "Поиск", spyDesc: "Поиск Работы", resBuilder: "Создать", resDesc: "Загрузите CV и вставьте вакансию для сборки.", review: "Обзор", revDesc: "Загрузите CV и вакансию для проверки.", cover: "Письмо", covDesc: "Вставьте вакансию и данные для письма.", selectionDesc: "Выберите инструмент.", uploadLabel: "Загрузить", jobPlaceholder: "Отрасль...", detailsPlaceholder: "Чем помочь?", result: "Результат", copy: "Копия", copied: "Готово", waiting: "Чем помочь?", waitingSpy: "Готов.", waitingResume: "Готов.", waitingReview: "Готов.", waitingCover: "Готов.", reset: "Сброс", langNames: { English: "Английский", Spanish: "Испанский", French: "French", German: "German", Portuguese: "Portuguese", Italian: "Italian", Chinese: "Chinese", Japanese: "Japanese", Russian: "Russian", Arabic: "Arabic" }, generate: "СОЗДАТЬ", missionComplete: "Сохранено", backgroundActive: "Сохранение...", fullTime: "Полный день", partTime: "Частично", remote: "Удаленно", signIn: "Войти", signOut: "Выйти", welcome: "С возвращением", loginPrompt: "Войдите для сохранения", googleLogin: "Войти через Google", loginLater: "Позже", loadSave: "Да, Загрузить", startFresh: "Нет, Заново", resumeSession: "Продолжить?", sessionFound: "Хотите загрузить последнее сохранение?", stopped: "Вы остановили генерацию" },
+  Arabic: { hubTitle: "JobWisely", back: "العودة", spy: "كشاف", spyDesc: "البحث عن وظائف", resBuilder: "منشئ", resDesc: "ارفع السيرة والصق الوظيفة لإعادة البناء.", review: "مراجعة", revDesc: "ارفع السيرة والوظيفة لتحليل الفجوات.", cover: "خطاب", covDesc: "الصق الوظيفة وبياناتك لكتابة الخطاب.", selectionDesc: "اختر أداة من الشريط الجانبي.", uploadLabel: "رفع", jobPlaceholder: "الوظيفة...", detailsPlaceholder: "كيف أساعدك؟", result: "النتيجة", copy: "نسخ", copied: "تم", waiting: "كيف أساعدك؟", waitingSpy: "جاهز للبحث.", waitingResume: "جاهز للبناء.", waitingReview: "جاهز للتحليل.", waitingCover: "جاهز للكتابة.", reset: "جديد", langNames: { English: "الإنجليزية", Arabic: "العربية", Spanish: "الإسبانية", French: "الفرنسية", German: "الألمانية", Portuguese: "البرتغالية", Italian: "الإيطالية", Chinese: "الصينية", Japanese: "اليابانية", Russian: "الروسية" }, generate: "إنشاء", missionComplete: "تم الحفظ", backgroundActive: "جارٍ الحفظ...", fullTime: "دوام كامل", partTime: "دوام جزئي", remote: "عن بعد", signIn: "توسجيل الدخول", signOut: "خروج", welcome: "مرحباً بعودتك", loginPrompt: "سجل الدخول لحفظ تقدمك", googleLogin: "المتابعة مع Google", loginLater: "لاحقاً", loadSave: "نعم، تحميل", startFresh: "لا، جديد", resumeSession: "استئناف الجلسة؟", sessionFound: "هل تريد تحميل آخر حفظ منذ زيارتك؟", stopped: "لقد أوقفت هذا التوليد" }
 };
 
 const THEMES: Record<AppMode, { bg: string; icon: string }> = {
@@ -179,7 +180,7 @@ export default function Home() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `kronawork-doc.${format}`;
+      a.download = `jobwisely-doc.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -260,7 +261,13 @@ export default function Home() {
     try {
       const fd = new FormData();
       fd.append('mode', m); fd.append('language', language);
-      fd.append('text', m === 'spy' ? `LOC: ${toolState[m].location}, HOURS: ${toolState[m].hours}, GOAL: ${txt}` : txt);
+      fd.append('text', txt);
+      // SEND LOCATION AND HOURS FOR SCOUT MODE
+      if (m === 'spy') {
+          fd.append('location', toolState.spy.location || '');
+          fd.append('hours', toolState.spy.hours || 'Full-Time');
+      }
+
       for (const f of toolState[m].files) {
         if (f.type.startsWith('image/')) fd.append('image', await fileToBase64(f));
         else fd.append('image', await fileToBase64(f)); 
@@ -305,19 +312,16 @@ export default function Home() {
       {/* SPLASH SCREEN */}
       {showSplash && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#131314] animate-out fade-out duration-700 delay-[2000ms] fill-mode-forwards pointer-events-none">
-           <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-blue-600/40 via-purple-600/40 to-pink-600/40 rounded-full blur-[100px] animate-pulse" />
-           </div>
            <div className="relative z-10 flex flex-col items-center">
-              <div className="mb-8 p-6 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-2xl shadow-2xl animate-in zoom-in duration-1000">
+              <div className="mb-8 p-6 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-2xl animate-in zoom-in duration-1000">
                  <Sparkles size={72} className="text-white drop-shadow-[0_0_20px_rgba(59,130,246,0.6)]" />
               </div>
-              <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 tracking-tight animate-in slide-in-from-bottom-4 duration-1000">KronaWork</h1>
+              <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 tracking-tight animate-in slide-in-from-bottom-4 duration-1000">JobWisely</h1>
            </div>
         </div>
       )}
 
-      {/* CLOUD PROMPT */}
+      {/* CLOUD PROMPT (BIG) */}
       {showLoadPrompt && (
         <div className="fixed bottom-6 right-6 bg-[#1e1f20] border border-blue-500/30 p-5 rounded-2xl shadow-2xl z-[100] animate-in slide-in-from-bottom-5 delay-1000">
            <div className="flex items-start gap-4 mb-4">
@@ -349,7 +353,7 @@ export default function Home() {
       )}
 
       <aside className={`bg-[#1e1f20] flex flex-col transition-all duration-300 ease-in-out relative z-20 overflow-hidden ${sidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0'}`}>
-        <div className="p-6 flex items-center gap-3 text-white font-bold"><div className="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-500/20"><Sparkles size={18}/></div><span className="text-lg">KronaWork</span></div>
+        <div className="p-6 flex items-center gap-3 text-white font-bold"><div className="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-500/20"><Sparkles size={18}/></div><span className="text-lg">JobWisely</span></div>
         <div className="flex-1 px-3 space-y-1">
           <button onClick={() => setMode('selection')} className="w-full flex items-center gap-3 p-3 hover:bg-[#333537] rounded-full text-sm font-bold text-white mb-4"><Plus size={18}/> {t.reset}</button>
           {[ { id: 'spy', icon: <Search size={18}/>, label: t.spy }, { id: 'resume', icon: <FileText size={18}/>, label: t.resBuilder }, { id: 'review', icon: <Briefcase size={18}/>, label: t.review }, { id: 'cover', icon: <PenTool size={18}/>, label: t.cover } ].map((item) => (
@@ -383,27 +387,15 @@ export default function Home() {
 
         <div className="flex-1 overflow-y-auto scrollbar-hide" ref={scrollContainerRef} onScroll={handleScroll}>
           <div className="max-w-3xl mx-auto px-6 pt-8 pb-60 space-y-12">
-            {currentData.messages.map((msg, index) => {
-              const isLast = index === currentData.messages.length - 1;
-              return (
+            {currentData.messages.map((msg, index) => (
                 <div key={msg.id} className={`flex gap-4 animate-in slide-in-from-bottom-2 duration-300 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {msg.role === 'assistant' && <div className="w-8 h-8 rounded-full bg-[#333537] flex items-center justify-center shrink-0"><Sparkles size={16} className={theme.icon}/></div>}
                   <div className={`max-w-[85%] rounded-2xl p-4 relative ${msg.role === 'user' ? 'bg-[#28292a] text-[#e3e3e3] rounded-tr-none shadow-xl' : 'text-[#e3e3e3] leading-7'}`}>
-                    {msg.role === 'user' && <div className="absolute -top-0 -right-2 w-0 h-0 border-t-[10px] border-t-[#28292a] border-r-[10px] border-r-transparent" />}
-                    
                     <div className={msg.role === 'assistant' ? "prose prose-invert max-w-none" : ""}>
                       <ReactMarkdown components={{
                         p: ({children}) => <p className="m-0 leading-relaxed text-lg">{children}</p>,
                         blockquote: ({children}) => <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-400">{children}</blockquote>,
-                        hr: () => <div className="hidden" />, 
-                        a: ({...p}) => {
-                          const href = String(p.href || '');
-                          const base = "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold no-underline hover:scale-105 transition-all text-white my-1 mx-0.5 shadow-lg transform translate-y-[-2px]";
-                          if (href.includes('google.com')) return <a {...p} target="_blank" rel="noopener noreferrer" className={`${base} bg-[#28292a] border border-white/10`}><SmallGoogleIcon /> Google Search</a>;
-                          if (href.includes('linkedin.com')) return <a {...p} target="_blank" rel="noopener noreferrer" className={`${base} bg-[#0077b5]`}><Linkedin size={12} fill="currentColor" /> LinkedIn</a>;
-                          if (href.includes('indeed.com')) return <a {...p} target="_blank" rel="noopener noreferrer" className={`${base} bg-[#2164f3]`}><Briefcase size={12} /> Indeed</a>;
-                          return <a {...p} target="_blank" rel="noopener noreferrer" className={`${base} bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600`}>{p.children}</a>;
-                        }
+                        a: ({...p}) => <a {...p} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold no-underline hover:scale-105 transition-all text-white my-1 mx-0.5 shadow-lg bg-gradient-to-r from-blue-600 to-purple-600">{p.children}</a>
                       }}>{msg.content}</ReactMarkdown>
                     </div>
                     {msg.isStopped && <div className="text-xs text-gray-400 mt-3 flex items-center gap-2 uppercase tracking-widest animate-pulse"><Octagon size={12}/> {t.stopped}</div>}
@@ -428,14 +420,13 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-              );
-            })}
+            ))}
             
             {currentData.messages.length === 0 && (
                 <div key={mode} className="h-[60vh] flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-500">
                     <div className={`p-8 rounded-full mb-8 bg-gradient-to-b ${theme.bg} to-transparent animate-pulse shadow-2xl`}><Sparkles size={72} className={theme.icon}/></div>
                     <h3 className="text-4xl font-black text-white italic tracking-tighter mb-2">{currentGreeting}</h3>
-                    <p className="text-gray-400 text-lg font-medium max-w-md italic">{currentTutorial}</p>
+                    <p className="text-gray-400 text-lg font-medium max-w-md italic">{translations[language].selectionDesc}</p>
                 </div>
             )}
             <div ref={messagesEndRef} className="h-4" />
@@ -444,6 +435,32 @@ export default function Home() {
 
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#131314] via-[#131314]/90 to-transparent">
           <div className="max-w-3xl mx-auto bg-[#1e1f20] rounded-[2.5rem] border border-white/5 p-3 shadow-2xl relative transition-all duration-300">
+             
+             {/* CONNECTED LOCATION BAR (Super Long & Inside the Bubble) */}
+             {mode === 'spy' && (
+               <div className="flex items-center gap-3 mb-3 px-2 border-b border-white/5 pb-3">
+                  <div className="bg-purple-500/10 p-2 rounded-full"><MapPin size={16} className="text-purple-400"/></div>
+                  <input 
+                     className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-gray-500"
+                     placeholder="Target Location (e.g. New York, Remote)..."
+                     value={toolState.spy.location}
+                     onChange={e => setToolState(p => ({ ...p, spy: { ...p.spy, location: e.target.value } }))}
+                  />
+                  <div className="h-4 w-px bg-white/10 mx-2"></div>
+                  <select 
+                      className="bg-transparent outline-none text-sm text-gray-300 cursor-pointer hover:text-white transition-colors"
+                      value={toolState.spy.hours}
+                      onChange={e => setToolState(p => ({ ...p, spy: { ...p.spy, hours: e.target.value } }))}
+                   >
+                      <option className="bg-[#1e1f20]" value="Full-Time">{t.fullTime}</option>
+                      <option className="bg-[#1e1f20]" value="Part-Time">{t.partTime}</option>
+                      <option className="bg-[#1e1f20]" value="Remote">{t.remote}</option>
+                      <option className="bg-[#1e1f20]" value="Contract">Contract</option>
+                   </select>
+                   <ChevronDown size={14} className="text-gray-500"/>
+               </div>
+             )}
+
              <div className="flex items-end gap-2 px-2 relative z-10">
                <button onClick={() => fileInputRef.current?.click()} className="p-3 hover:bg-[#333537] text-gray-400 rounded-full transition-all shrink-0 hover:scale-110 active:scale-95">
                   <UploadCloud size={24}/>
@@ -457,7 +474,7 @@ export default function Home() {
                <textarea 
                   className="flex-1 bg-transparent py-3 px-2 outline-none resize-none text-base text-white placeholder:text-[#8e918f] max-h-48 min-h-[52px]"
                   rows={1}
-                  placeholder={`Ask KronaWork...`}
+                  placeholder={`Ask JobWisely...`}
                   value={mode === 'spy' ? currentData.input : currentData.spec}
                   onChange={e => {
                      if (mode === 'spy') {
