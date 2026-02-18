@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { 
@@ -8,7 +7,7 @@ import {
   Globe, Plus, Send, Menu, Sparkles, Square, MapPin, LogIn, ArrowRight, Loader2, LogOut, History, Linkedin, ExternalLink, Octagon, Zap, Download, FileType
 } from 'lucide-react';
 
-// --- 1. FIREBASE INITIALIZATION (SELF-CONTAINED) ---
+// --- 1. FIREBASE IMPORTS ---
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
   getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, User 
@@ -30,7 +29,6 @@ const firebaseConfig = {
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
 
 // --- 2. TYPES ---
 type AppMode = 'selection' | 'spy' | 'resume' | 'review' | 'cover';
@@ -54,7 +52,7 @@ interface LanguageStrings {
   stopped: string;
 }
 
-// --- 3. TRANSLATIONS (KEPT FROM ORIGINAL) ---
+// --- 3. TRANSLATIONS ---
 const translations: Record<LanguageKey, LanguageStrings> = {
   English: { 
     hubTitle: "KronaWork", back: "Back", spy: "Job Scout", spyDesc: "Find Jobs", 
@@ -74,7 +72,7 @@ const translations: Record<LanguageKey, LanguageStrings> = {
   Spanish: { hubTitle: "KronaWork", back: "Volver", spy: "Buscador", spyDesc: "Buscar Trabajos", resBuilder: "Constructor", resDesc: "Sube tu CV y pega el trabajo para reconstruirlo.", review: "Revisión", revDesc: "Sube tu CV y requisitos para encontrar fallos.", cover: "Carta", covDesc: "Pega la descripción y tus datos para redactar.", selectionDesc: "Seleccione una herramienta para comenzar.", uploadLabel: "Subir", jobPlaceholder: "Puesto...", detailsPlaceholder: "¿Cómo ayudo?", result: "Resultado", copy: "Copia", copied: "Copiado", waiting: "¿Cómo puedo ayudarte?", waitingSpy: "Listo para buscar.", waitingResume: "Listo para construir.", waitingReview: "Listo para analizar.", waitingCover: "Listo para escribir.", reset: "Reiniciar", langNames: { English: "Inglés", Spanish: "Español", French: "Francés", German: "Alemán", Portuguese: "Portugués", Italian: "Italiano", Chinese: "Chino", Japanese: "Japonés", Russian: "Ruso", Arabic: "Árabe" }, generate: "Generar", missionComplete: "Guardado", backgroundActive: "Guardando...", fullTime: "Tiempo Completo", partTime: "Medio Tiempo", remote: "Remoto", signIn: "Iniciar Sesión", signOut: "Cerrar Sesión", welcome: "Bienvenido", loginPrompt: "Inicia sesión para guardar", googleLogin: "Continuar con Google", loginLater: "Más tarde", loadSave: "Sí, Cargar", startFresh: "No, Empezar", resumeSession: "¿Reanudar Sesión?", sessionFound: "¿Quieres cargar lo último guardado?", stopped: "Has detenido la generación" },
   French: { hubTitle: "KronaWork", back: "Retour", spy: "Éclaireur", spyDesc: "Trouver Emplois", resBuilder: "Créateur", resDesc: "Chargez votre CV et collez le poste pour le refaire.", review: "Révision", revDesc: "Chargez votre CV et le poste pour analyser les lacunes.", cover: "Lettre", covDesc: "Collez le poste et vos infos pour rédiger.", selectionDesc: "Sélectionnez un outil pour commencer.", uploadLabel: "Charger", jobPlaceholder: "Poste...", detailsPlaceholder: "Comment aider?", result: "Résultat", copy: "Copier", copied: "Copié", waiting: "Comment aider?", waitingSpy: "Recherche.", waitingResume: "Création.", waitingReview: "Analyse.", waitingCover: "Rédaction.", reset: "Réinitialiser", langNames: { English: "Anglais", Spanish: "Espagnol", French: "Français", German: "Allemand", Portuguese: "Portugais", Italian: "Italien", Chinese: "Chinois", Japanese: "Japonés", Russian: "Russe", Arabic: "Arabe" }, generate: "GÉNÉRER", missionComplete: "Enregistré", backgroundActive: "Enregistrement...", fullTime: "Temps Plein", partTime: "Temps Partiel", remote: "Télétravail", signIn: "Connexion", signOut: "Déconnexion", welcome: "Bon retour", loginPrompt: "Connectez-vous pour sauvegarder", googleLogin: "Continuer avec Google", loginLater: "Plus tard", loadSave: "Oui, Charger", startFresh: "Non, Nouveau", resumeSession: "Reprendre ?", sessionFound: "Voulez-vous charger la dernière sauvegarde ?", stopped: "Vous avez arrêté la génération" },
   German: { hubTitle: "KronaWork", back: "Zurück", spy: "Scout", spyDesc: "Jobs Finden", resBuilder: "Editor", resDesc: "CV hochladen und Job einfügen zum Neuerstellen.", review: "Check", revDesc: "CV hochladen und Job einfügen zur Analyse.", cover: "Brief", covDesc: "Job und Details einfügen zum Schreiben.", selectionDesc: "Wählen Sie ein Tool aus.", uploadLabel: "Hochladen", jobPlaceholder: "Job...", detailsPlaceholder: "Hilfe?", result: "Ergebnis", copy: "Kopieren", copied: "Kopiert", waiting: "Wie helfen?", waitingSpy: "Suche.", waitingResume: "Editor.", waitingReview: "Check.", waitingCover: "Entwurf.", reset: "Reset", langNames: { English: "Englisch", Spanish: "Spanisch", French: "Französisch", German: "Deutsch", Portuguese: "Portugiesisch", Italian: "Italienisch", Chinese: "Chinesisch", Japanese: "Japanisch", Russian: "Russisch", Arabic: "Arabisch" }, generate: "GENERIEREN", missionComplete: "Gespeichert", backgroundActive: "Speichert...", fullTime: "Vollzeit", partTime: "Teilzeit", remote: "Remote", signIn: "Anmelden", signOut: "Abmelden", welcome: "Willkommen", loginPrompt: "Anmelden zum Speichern", googleLogin: "Weiter mit Google", loginLater: "Später", loadSave: "Ja, Laden", startFresh: "Nein, Neu", resumeSession: "Sitzung laden?", sessionFound: "Möchten Sie den letzten Stand laden?", stopped: "Sie haben die Generierung gestoppt" },
-  Portuguese: { hubTitle: "KronaWork", back: "Voltar", spy: "Buscador", spyDesc: "Achar Vagas", resBuilder: "Criador", resDesc: "Envie o CV e cole a vaga para refazer.", review: "Revisão", revDesc: "Envie o CV e a vaga para analizar lacunas.", cover: "Carta", covDesc: "Cole a vaga e seus datos para escrever.", selectionDesc: "Selecione uma ferramenta.", uploadLabel: "Subir", jobPlaceholder: "Vaga...", detailsPlaceholder: "Ajuda?", result: "Resultado", copy: "Copiar", copied: "Copiado", waiting: "Como ajudar?", waitingSpy: "Busca.", waitingResume: "Criação.", waitingReview: "Análise.", waitingCover: "Redação.", reset: "Reset", langNames: { English: "Inglés", Spanish: "Espanhol", French: "Francés", German: "Alemão", Portuguese: "Portugués", Italian: "Italiano", Chinese: "Chinês", Japanese: "Japonés", Russian: "Ruso", Arabic: "Áرabe" }, generate: "GERAR", missionComplete: "Salvo", backgroundActive: "Salvando...", fullTime: "Tempo Integral", partTime: "Meio Período", remote: "Remoto", signIn: "Entrar", signOut: "Sair", welcome: "Bem-vindo", loginPrompt: "Entre para salvar", googleLogin: "Continuar com Google", loginLater: "Mais tarde", loadSave: "Sim, Carregar", startFresh: "Não, Início", resumeSession: "Retomar Sessão?", sessionFound: "Deseja carregar o último salvamento?", stopped: "Você parou a geração" },
+  Portuguese: { hubTitle: "KronaWork", back: "Voltar", spy: "Buscador", spyDesc: "Achar Vagas", resBuilder: "Criador", resDesc: "Envie o CV e cole a vaga para refazer.", review: "Revisão", revDesc: "Envie o CV e a vaga para analizar lacunas.", cover: "Carta", covDesc: "Cole a vaga e seus datos para escrever.", selectionDesc: "Selecione uma ferramenta.", uploadLabel: "Subir", jobPlaceholder: "Vaga...", detailsPlaceholder: "Ajuda?", result: "Resultado", copy: "Copiar", copied: "Copiado", waiting: "Como ajudar?", waitingSpy: "Busca.", waitingResume: "Criação.", waitingReview: "Análise.", waitingCover: "Redação.", reset: "Reset", langNames: { English: "Inglés", Spanish: "Espanhol", French: "Francés", German: "Alemão", Portuguese: "Portugués", Italian: "Italiano", Chinese: "Chinês", Japanese: "Japonés", Russian: "Ruso", Arabic: "Árabe" }, generate: "GERAR", missionComplete: "Salvo", backgroundActive: "Salvando...", fullTime: "Tempo Integral", partTime: "Meio Período", remote: "Remoto", signIn: "Entrar", signOut: "Sair", welcome: "Bem-vindo", loginPrompt: "Entre para salvar", googleLogin: "Continuar com Google", loginLater: "Mais tarde", loadSave: "Sim, Carregar", startFresh: "Não, Início", resumeSession: "Retomar Sessão?", sessionFound: "Deseja carregar o último salvamento?", stopped: "Você parou a geração" },
   Italian: { hubTitle: "KronaWork", back: "Indietro", spy: "Scout", spyDesc: "Trova Lavoro", resBuilder: "Crea", resDesc: "Carica il CV e incolla il lavoro per rifarlo.", review: "Revisione", revDesc: "Carica il CV e il lavoro per l'analisi.", cover: "Lettera", covDesc: "Incolla il lavoro e le tue info per scrivere.", selectionDesc: "Seleziona uno strumento.", uploadLabel: "Carica", jobPlaceholder: "Lavoro...", detailsPlaceholder: "Aiuto?", result: "Résultato", copy: "Copia", copied: "Copiato", waiting: "Pronto.", waitingSpy: "Cerca.", waitingResume: "Crea.", waitingReview: "Analisi.", waitingCover: "Bozza.", reset: "Reset", langNames: { English: "Inglese", Spanish: "Spagnolo", French: "Francese", German: "Tedesco", Portuguese: "Portoghese", Italian: "Italiano", Chinese: "Cinese", Japanese: "Giapponese", Russian: "Russo", Arabic: "Arabo" }, generate: "GENERA", missionComplete: "Salvato", backgroundActive: "Salvataggio...", fullTime: "Full-Time", partTime: "Part-Time", remote: "Remoto", signIn: "Accedi", signOut: "Esci", welcome: "Bentornato", loginPrompt: "Accedi per salvare", googleLogin: "Continua con Google", loginLater: "Più tardi", loadSave: "Sì, Carica", startFresh: "No, Nuovo", resumeSession: "Riprendere?", sessionFound: "Vuoi caricare l'ultimo salvataggio?", stopped: "Hai interrotto la generazione" },
   Chinese: { hubTitle: "KronaWork", back: "返回", spy: "搜索", spyDesc: "寻找职位", resBuilder: "生成器", resDesc: "上传简历并粘贴职位进行重构。", review: "复审", revDesc: "上传简历和职位进行不足分析。", cover: "求职信", covDesc: "粘贴职位 and 个人信息进行起草。", selectionDesc: "请从侧边栏选择工具。", uploadLabel: "上传", jobPlaceholder: "行业...", detailsPlaceholder: "如何帮您？", result: "结果", copy: "复制", copied: "已复制", waiting: "准备好了。", waitingSpy: "准备搜索。", waitingResume: "准备生成。", waitingReview: "准备分析。", waitingCover: "准备起草。", reset: "重置", langNames: { English: "英语", Spanish: "西班牙语", French: "法语", German: "德语", Portuguese: "葡萄牙语", Italian: "意大利语", Chinese: "中文", Japanese: "日语", Russian: "俄语", Arabic: "阿拉伯语" }, generate: "生成", missionComplete: "已保存", backgroundActive: "保存中...", fullTime: "全职", partTime: "兼职", remote: "远程", signIn: "登录", signOut: "登出", welcome: "欢迎回来", loginPrompt: "登录以保存进度", googleLogin: "使用 Google 继续", loginLater: "稍后", loadSave: "是的，加载", startFresh: "不，重新开始", resumeSession: "恢复会话？", sessionFound: "您要加载上次保存的内容吗？", stopped: "您已停止生成" },
   Japanese: { hubTitle: "KronaWork", back: "戻る", spy: "スカウト", spyDesc: "仕事を探す", resBuilder: "作成", resDesc: "CVをアップし案件を貼って再構築します。", review: "添削", revDesc: "CVと案件をアップして分析します。", cover: "レター", covDesc: "案件と詳細を貼って作成します。", selectionDesc: "ツールを選択してください。", uploadLabel: "アップ", jobPlaceholder: "職種...", detailsPlaceholder: "お手伝いは？", result: "結果", copy: "コピー", copied: "完了", waiting: "準備完了。", waitingSpy: "準備完了。", waitingResume: "準備完了。", waitingReview: "準備完了。", waitingCover: "準備完了。", reset: "リセット", langNames: { English: "英語", Spanish: "スペイン語", French: "フランス語", German: "ドイツ語", Portuguese: "ポルトガル語", Italian: "イタリア語", Chinese: "中国語", Japanese: "日本語", Russian: "ロシア語", Arabic: "アラビア語" }, generate: "生成", missionComplete: "保存しました", backgroundActive: "保存中...", fullTime: "フルタイム", partTime: "パート", remote: "リモート", signIn: "サインイン", signOut: "サインアウト", welcome: "お帰りなさい", loginPrompt: "保存するにはログイン", googleLogin: "Googleで続行", loginLater: "後で", loadSave: "はい、ロード", startFresh: "いいえ、新規", resumeSession: "再開しますか？", sessionFound: "前回保存した内容を読み込みますか？", stopped: "生成を停止しました" },
@@ -137,12 +135,13 @@ export default function Home() {
   const t = useMemo(() => translations[language] || translations['English'], [language]);
   const theme = THEMES[mode] || THEMES['selection'];
 
-  // --- LOGIC ---
+  // --- INITIAL SPLASH EFFECT ---
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
+  // Close menu when clicking outside
   useEffect(() => {
     const closeMenu = () => setOpenMenuId(null);
     window.addEventListener('click', closeMenu);
@@ -151,7 +150,7 @@ export default function Home() {
 
   const handleGoogleLogin = async () => {
     setLoginLoading(true);
-    try { await signInWithPopup(auth, googleProvider); } catch (err: unknown) { console.error(err); }
+    try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch (err: unknown) { console.error(err); }
     finally { setLoginLoading(false); }
   };
 
@@ -187,7 +186,7 @@ export default function Home() {
       document.body.removeChild(a);
     } catch (err) {
       console.error(err);
-      alert("Failed to export. (Is api/export/route.ts set up?)");
+      alert("Failed to export document. Make sure api/export/route.ts exists.");
     }
   };
 
@@ -214,7 +213,7 @@ export default function Home() {
             setPendingData(docSnap.data() as Record<AppMode, ToolData>);
             setShowLoadPrompt(true);
           }
-        } catch (err: unknown) { console.error("Sync Error:", err); }
+        } catch (err: unknown) { console.error("Cloud Error:", err); }
       } else {
         setUser(null);
         if (!localStorage.getItem('skip_login')) setShowLoginModal(true);
@@ -263,7 +262,8 @@ export default function Home() {
       fd.append('mode', m); fd.append('language', language);
       fd.append('text', m === 'spy' ? `LOC: ${toolState[m].location}, HOURS: ${toolState[m].hours}, GOAL: ${txt}` : txt);
       for (const f of toolState[m].files) {
-        fd.append('image', await fileToBase64(f)); 
+        if (f.type.startsWith('image/')) fd.append('image', await fileToBase64(f));
+        else fd.append('image', await fileToBase64(f)); 
       }
       const res = await fetch('/api/career', { method: 'POST', body: fd, signal: controller.signal });
       const reader = res.body!.getReader();
@@ -302,11 +302,14 @@ export default function Home() {
     <div className="flex h-screen bg-[#131314] text-[#e3e3e3] font-sans overflow-hidden" dir={language === 'Arabic' ? 'rtl' : 'ltr'}>
       <div className={`fixed inset-0 bg-gradient-to-b ${theme.bg} to-transparent opacity-30 pointer-events-none transition-all duration-1000`} />
       
-      {/* SPLASH */}
+      {/* SPLASH SCREEN */}
       {showSplash && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#131314] animate-out fade-out duration-700 delay-[2000ms] fill-mode-forwards pointer-events-none">
+           <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-blue-600/40 via-purple-600/40 to-pink-600/40 rounded-full blur-[100px] animate-pulse" />
+           </div>
            <div className="relative z-10 flex flex-col items-center">
-              <div className="mb-8 p-6 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-2xl animate-in zoom-in duration-1000">
+              <div className="mb-8 p-6 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-2xl shadow-2xl animate-in zoom-in duration-1000">
                  <Sparkles size={72} className="text-white drop-shadow-[0_0_20px_rgba(59,130,246,0.6)]" />
               </div>
               <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 tracking-tight animate-in slide-in-from-bottom-4 duration-1000">KronaWork</h1>
@@ -314,15 +317,15 @@ export default function Home() {
         </div>
       )}
 
-      {/* CLOUD RESTORE */}
+      {/* CLOUD PROMPT */}
       {showLoadPrompt && (
-        <div className="fixed bottom-6 right-6 bg-[#1e1f20] border border-blue-500/30 p-5 rounded-2xl shadow-2xl z-[100] animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-6 right-6 bg-[#1e1f20] border border-blue-500/30 p-5 rounded-2xl shadow-2xl z-[100] animate-in slide-in-from-bottom-5 delay-1000">
            <div className="flex items-start gap-4 mb-4">
               <div className="bg-blue-500/20 p-3 rounded-xl text-blue-400 shrink-0"><History size={24} /></div>
               <div><h4 className="font-bold text-white mb-1">{t.resumeSession}</h4><p className="text-xs text-gray-400">{t.sessionFound}</p></div>
            </div>
            <div className="flex gap-2">
-              <button onClick={handleRestore} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2.5 rounded-lg transition-all active:scale-95">{t.loadSave}</button>
+              <button onClick={handleRestore} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2.5 rounded-lg transition-all active:scale-95 shadow-lg">{t.loadSave}</button>
               <button onClick={() => setShowLoadPrompt(false)} className="flex-1 bg-[#28292a] hover:bg-[#333537] text-gray-400 hover:text-white text-xs font-bold py-2.5 rounded-lg transition-all active:scale-95">{t.startFresh}</button>
            </div>
         </div>
@@ -331,13 +334,13 @@ export default function Home() {
       {/* LOGIN MODAL */}
       {showLoginModal && !showSplash && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
-          <div className="bg-[#1e1f20] w-full max-w-md p-8 rounded-3xl border border-white/10 text-center relative animate-in zoom-in-95 duration-300">
+          <div className="bg-[#1e1f20] w-full max-w-md p-8 rounded-3xl border border-white/10 text-center relative overflow-hidden animate-in zoom-in-95 duration-300">
             {loginLoading ? <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto py-12" /> : (
               <>
                 <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-600 to-pink-500 mx-auto mb-6 flex items-center justify-center shadow-lg"><Sparkles className="text-white w-8 h-8" /></div>
                 <h2 className="text-3xl font-black text-white mb-2 italic tracking-tight">{t.welcome}</h2>
                 <p className="text-gray-400 mb-8 text-sm">{t.loginPrompt}</p>
-                <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-3.5 rounded-xl hover:bg-gray-100 transition-all"><GoogleIcon /> {t.googleLogin}</button>
+                <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-3.5 rounded-xl hover:bg-gray-100 active:scale-95 transition-all"><GoogleIcon /> {t.googleLogin}</button>
                 <button onClick={() => { localStorage.setItem('skip_login', 'true'); setShowLoginModal(false); }} className="mt-6 text-xs text-gray-500 hover:text-white underline transition-colors">{t.loginLater}</button>
               </>
             )}
@@ -345,8 +348,8 @@ export default function Home() {
         </div>
       )}
 
-      <aside className={`bg-[#1e1f20] flex flex-col transition-all duration-300 relative z-20 overflow-hidden ${sidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0'}`}>
-        <div className="p-6 flex items-center gap-3 text-white font-bold"><div className="bg-blue-600 p-1.5 rounded-lg"><Sparkles size={18}/></div><span className="text-lg">KronaWork</span></div>
+      <aside className={`bg-[#1e1f20] flex flex-col transition-all duration-300 ease-in-out relative z-20 overflow-hidden ${sidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0'}`}>
+        <div className="p-6 flex items-center gap-3 text-white font-bold"><div className="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-500/20"><Sparkles size={18}/></div><span className="text-lg">KronaWork</span></div>
         <div className="flex-1 px-3 space-y-1">
           <button onClick={() => setMode('selection')} className="w-full flex items-center gap-3 p-3 hover:bg-[#333537] rounded-full text-sm font-bold text-white mb-4"><Plus size={18}/> {t.reset}</button>
           {[ { id: 'spy', icon: <Search size={18}/>, label: t.spy }, { id: 'resume', icon: <FileText size={18}/>, label: t.resBuilder }, { id: 'review', icon: <Briefcase size={18}/>, label: t.review }, { id: 'cover', icon: <PenTool size={18}/>, label: t.cover } ].map((item) => (
@@ -355,57 +358,62 @@ export default function Home() {
             </button>
           ))}
         </div>
-        <div className="p-4 border-t border-white/5">
-           <div className="flex items-center gap-2 bg-[#333537] rounded-full px-3 py-2">
-              <Globe size={14} className="text-gray-400"/>
-              <select value={language} onChange={e => setLanguage(e.target.value as LanguageKey)} className="bg-transparent text-xs text-gray-200 outline-none w-full cursor-pointer">
-                 {Object.keys(translations).map(k => <option key={k} value={k} className="bg-[#1e1f20]">{translations[k as LanguageKey].langNames[language]}</option>)}
-              </select>
-           </div>
-        </div>
+        <div className="p-4 border-t border-white/5"><div className="flex items-center gap-2 bg-[#333537] rounded-full px-3 py-2"><Globe size={14} className="text-gray-400"/><select value={language} onChange={e => setLanguage(e.target.value as LanguageKey)} className="bg-transparent text-xs text-gray-200 outline-none w-full cursor-pointer">{Object.keys(translations).map(k => <option key={k} value={k} className="bg-[#1e1f20]">{translations[k as LanguageKey].langNames[language]}</option>)}</select></div></div>
       </aside>
 
-      <main className="flex-1 flex flex-col relative min-w-0">
+      <main className="flex-1 flex flex-col relative min-w-0 transition-opacity duration-1000 ease-in-out">
         <header className="h-16 flex items-center justify-between px-6 z-10">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-[#333537] rounded-full text-white transition-colors"><Menu size={20}/></button>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-[#333537] rounded-full transition-colors text-white"><Menu size={20}/></button>
           <div className="flex items-center gap-4 relative">
              {saveStatus === 'saving' && <span className="text-xs text-blue-400 animate-pulse flex items-center gap-1"><Loader2 size={12} className="animate-spin"/> {t.backgroundActive}</span>}
-             {saveStatus === 'saved' && <span className="text-xs text-green-400 animate-in fade-in flex items-center gap-1"><Check size={12}/> {t.missionComplete}</span>}
+             {saveStatus === 'saved' && <span className="text-xs text-green-400 animate-in fade-in zoom-in flex items-center gap-1"><Check size={12}/> {t.missionComplete}</span>}
              {user ? (
                <div className="relative">
-                 <div onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-pink-500 flex items-center justify-center text-sm font-black text-white shadow-xl cursor-pointer hover:scale-105 transition-all">{getInitials()}</div>
+                 <div onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-sm font-black text-white shadow-xl cursor-pointer hover:scale-105 active:scale-95 transition-all">{getInitials()}</div>
                  {showProfileMenu && (
-                   <div className="absolute top-full right-0 mt-2 w-48 bg-[#1e1f20] border border-white/10 rounded-xl shadow-2xl p-2 z-50">
+                   <div className="absolute top-full right-0 mt-2 w-48 bg-[#1e1f20] border border-white/10 rounded-xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
                      <div className="px-3 py-2 border-b border-white/5 text-xs text-gray-400">Signed in as <p className="text-sm font-bold text-white truncate">{user.email}</p></div>
                      <button onClick={() => signOut(auth).then(() => setShowProfileMenu(false))} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-white/5 rounded-lg transition-colors"><LogOut size={14}/> {t.signOut}</button>
                    </div>
                  )}
                </div>
-             ) : <button onClick={() => setShowLoginModal(true)} className="px-4 py-1.5 bg-[#333537] hover:bg-[#444648] rounded-full text-xs font-bold transition-all shadow-lg">{t.signIn}</button>}
+             ) : <button onClick={() => setShowLoginModal(true)} className="px-4 py-1.5 bg-[#333537] hover:bg-[#444648] rounded-full text-xs font-bold transition-all shadow-lg active:scale-95">{t.signIn}</button>}
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto scrollbar-hide" ref={scrollContainerRef} onScroll={handleScroll}>
           <div className="max-w-3xl mx-auto px-6 pt-8 pb-60 space-y-12">
-            {currentData.messages.map((msg, index) => (
+            {currentData.messages.map((msg, index) => {
+              const isLast = index === currentData.messages.length - 1;
+              return (
                 <div key={msg.id} className={`flex gap-4 animate-in slide-in-from-bottom-2 duration-300 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {msg.role === 'assistant' && <div className="w-8 h-8 rounded-full bg-[#333537] flex items-center justify-center shrink-0"><Sparkles size={16} className={theme.icon}/></div>}
                   <div className={`max-w-[85%] rounded-2xl p-4 relative ${msg.role === 'user' ? 'bg-[#28292a] text-[#e3e3e3] rounded-tr-none shadow-xl' : 'text-[#e3e3e3] leading-7'}`}>
+                    {msg.role === 'user' && <div className="absolute -top-0 -right-2 w-0 h-0 border-t-[10px] border-t-[#28292a] border-r-[10px] border-r-transparent" />}
+                    
                     <div className={msg.role === 'assistant' ? "prose prose-invert max-w-none" : ""}>
                       <ReactMarkdown components={{
                         p: ({children}) => <p className="m-0 leading-relaxed text-lg">{children}</p>,
                         blockquote: ({children}) => <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-400">{children}</blockquote>,
-                        a: ({...p}) => <a {...p} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold no-underline hover:scale-105 transition-all text-white my-1 mx-0.5 shadow-lg bg-gradient-to-r from-blue-600 to-purple-600">{p.children}</a>
+                        hr: () => <div className="hidden" />, 
+                        a: ({...p}) => {
+                          const href = String(p.href || '');
+                          const base = "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold no-underline hover:scale-105 transition-all text-white my-1 mx-0.5 shadow-lg transform translate-y-[-2px]";
+                          if (href.includes('google.com')) return <a {...p} target="_blank" rel="noopener noreferrer" className={`${base} bg-[#28292a] border border-white/10`}><SmallGoogleIcon /> Google Search</a>;
+                          if (href.includes('linkedin.com')) return <a {...p} target="_blank" rel="noopener noreferrer" className={`${base} bg-[#0077b5]`}><Linkedin size={12} fill="currentColor" /> LinkedIn</a>;
+                          if (href.includes('indeed.com')) return <a {...p} target="_blank" rel="noopener noreferrer" className={`${base} bg-[#2164f3]`}><Briefcase size={12} /> Indeed</a>;
+                          return <a {...p} target="_blank" rel="noopener noreferrer" className={`${base} bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600`}>{p.children}</a>;
+                        }
                       }}>{msg.content}</ReactMarkdown>
                     </div>
-                    {msg.isStopped && <div className="text-xs text-gray-400 mt-3 flex items-center gap-2 animate-pulse"><Octagon size={12}/> {t.stopped}</div>}
+                    {msg.isStopped && <div className="text-xs text-gray-400 mt-3 flex items-center gap-2 uppercase tracking-widest animate-pulse"><Octagon size={12}/> {t.stopped}</div>}
 
                     {msg.role === 'assistant' && !loading && (
-                      <div className="flex items-center gap-2 mt-3">
+                      <div className="flex items-center gap-2 mt-3 animate-in fade-in">
                           <button onClick={() => copyText(msg.content, msg.id)} className="p-1 text-gray-400 hover:text-white transition-colors">
                               {copySuccessId === msg.id ? <Check size={14} className="text-green-400"/> : <Copy size={14}/>}
                           </button>
-                          <div className="relative">
+                          <div className="relative" onClick={(e) => e.stopPropagation()}>
                               <button onClick={() => setOpenMenuId(openMenuId === msg.id ? null : msg.id)} className="p-1 text-gray-400 hover:text-white">
                                   <Download size={14} />
                               </button>
@@ -420,10 +428,11 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-            ))}
+              );
+            })}
             
             {currentData.messages.length === 0 && (
-                <div key={mode} className="h-[60vh] flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500">
+                <div key={mode} className="h-[60vh] flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-500">
                     <div className={`p-8 rounded-full mb-8 bg-gradient-to-b ${theme.bg} to-transparent animate-pulse shadow-2xl`}><Sparkles size={72} className={theme.icon}/></div>
                     <h3 className="text-4xl font-black text-white italic tracking-tighter mb-2">{currentGreeting}</h3>
                     <p className="text-gray-400 text-lg font-medium max-w-md italic">{currentTutorial}</p>
@@ -440,7 +449,8 @@ export default function Home() {
                   <UploadCloud size={24}/>
                   <input type="file" ref={fileInputRef} className="hidden" multiple onChange={e => {
                      if (e.target.files) {
-                        setToolState(p => ({ ...p, [mode]: { ...p[mode], files: [...p[mode].files, ...Array.from(e.target.files!)] } }));
+                        const newFiles = Array.from(e.target.files);
+                        setToolState(p => ({ ...p, [mode]: { ...p[mode], files: [...p[mode].files, ...newFiles] } }));
                      }
                   }}/>
                </button>
@@ -450,20 +460,42 @@ export default function Home() {
                   placeholder={`Ask KronaWork...`}
                   value={mode === 'spy' ? currentData.input : currentData.spec}
                   onChange={e => {
-                     if (mode === 'spy') setToolState(p => ({ ...p, spy: { ...p.spy, input: e.target.value } }));
-                     else setToolState(p => ({ ...p, [mode]: { ...p[mode], spec: e.target.value } }));
+                     if (mode === 'spy') {
+                        setToolState(p => ({ ...p, spy: { ...p.spy, input: e.target.value } }));
+                     } else {
+                        setToolState(p => ({ ...p, [mode]: { ...p[mode], spec: e.target.value } }));
+                     }
                   }}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAIAction(); } }}
+                  onKeyDown={e => {
+                     if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAIAction();
+                     }
+                  }}
                />
-               <button onClick={loading ? handleStop : handleAIAction} className={`w-12 h-12 rounded-full transition-all flex items-center justify-center ${loading ? 'border border-blue-500/30' : 'text-blue-400 hover:bg-[#333537]'}`}>
-                  {loading ? <div className="w-3 h-3 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" /> : <Send size={28}/>}
+               
+               {/* FIXED STOP GENERATION BUTTON */}
+               <button 
+                  onClick={loading ? handleStop : handleAIAction} 
+                  className={`w-12 h-12 rounded-full transition-all shrink-0 hover:scale-110 active:scale-95 flex items-center justify-center
+                    ${loading 
+                      ? 'bg-transparent border border-blue-500/30' 
+                      : 'text-blue-400 hover:bg-[#333537]'
+                    }`}
+               >
+                  {loading ? (
+                    <div className="w-3 h-3 bg-white rounded-[1px] shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                  ) : (
+                    <Send size={28}/>
+                  )}
                </button>
              </div>
              
+             {/* FILE PREVIEWS */}
              {currentData.files.length > 0 && (
                 <div className="flex gap-2 px-4 pb-2 mt-2 overflow-x-auto">
                    {currentData.files.map((f, i) => (
-                      <div key={i} className="flex items-center gap-2 bg-[#28292a] px-3 py-1.5 rounded-lg text-xs border border-white/5 shrink-0">
+                      <div key={i} className="flex items-center gap-2 bg-[#28292a] px-3 py-1.5 rounded-lg text-xs border border-white/5 shrink-0 animate-in zoom-in">
                          <span className="text-blue-400 font-bold">FILE</span>
                          <span className="max-w-[100px] truncate">{f.name}</span>
                          <button onClick={() => setToolState(p => ({ ...p, [mode]: { ...p[mode], files: p[mode].files.filter((_, idx) => idx !== i) } }))} className="hover:text-red-400"><X size={12}/></button>
